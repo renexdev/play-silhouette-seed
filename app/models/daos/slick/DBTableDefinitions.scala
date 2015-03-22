@@ -19,12 +19,12 @@ object DBTableDefinitions {
   val slickOAuth2Infos = TableQuery[OAuth2Infos]
 
   db.withSession { implicit session:Session =>
-    slickUsers.ddl.create
-    slickLoginInfos.ddl.create
-    slickUserLoginInfos.ddl.create
-    slickPasswordInfos.ddl.create
-    slickOAuth1Infos.ddl.create
-    slickOAuth2Infos.ddl.create
+//    slickUsers.ddl.create
+//    slickLoginInfos.ddl.create
+//    slickUserLoginInfos.ddl.create
+//    slickPasswordInfos.ddl.create
+//    slickOAuth1Infos.ddl.create
+//    slickOAuth2Infos.ddl.create
   }
 
   case class DBUser (

@@ -39,11 +39,11 @@ class SilhouetteModule extends AbstractModule with ScalaModule {
     bind[UserService].to[UserServiceImpl]
 //    val useSlick = Play.configuration.getBoolean("silhuette.seed.db.useSlick").getOrElse(false)
 //    if (useSlick) {
-//      Logger.debug("Binding to Slick DAO implementation.")
-//      bind[UserDAO].to[UserDAOSlick]
-//      bind[DelegableAuthInfoDAO[PasswordInfo]].to[PasswordInfoDAOSlick]
-//      bind[DelegableAuthInfoDAO[OAuth1Info]].to[OAuth1InfoDAOSlick]
-//      bind[DelegableAuthInfoDAO[OAuth2Info]].to[OAuth2InfoDAOSlick]
+      Logger.debug("Binding to Slick DAO implementation.")
+      bind[UserDAO].to[UserDAOSlick]
+      bind[DelegableAuthInfoDAO[PasswordInfo]].to[PasswordInfoDAOSlick]
+      bind[DelegableAuthInfoDAO[OAuth1Info]].to[OAuth1InfoDAOSlick]
+      bind[DelegableAuthInfoDAO[OAuth2Info]].to[OAuth2InfoDAOSlick]
 //    } else {
 //      Logger.debug("Binding to In-memory DAO implementations.")
 //      bind[UserDAO].to[UserDAOImpl]
@@ -53,12 +53,12 @@ class SilhouetteModule extends AbstractModule with ScalaModule {
 //    }
 
     //Conditional part
-    bind[UserDAO].to[UserDAOImpl]
-    bind[DelegableAuthInfoDAO[PasswordInfo]].to[PasswordInfoDAO]
-    bind[DelegableAuthInfoDAO[OAuth1Info]].to[OAuth1InfoDAO]
-    bind[DelegableAuthInfoDAO[OAuth2Info]].to[OAuth2InfoDAO]
+//    bind[UserDAO].to[UserDAOImpl]
+//    bind[DelegableAuthInfoDAO[PasswordInfo]].to[PasswordInfoDAO]
+//    bind[DelegableAuthInfoDAO[OAuth1Info]].to[OAuth1InfoDAO]
+//    bind[DelegableAuthInfoDAO[OAuth2Info]].to[OAuth2InfoDAO]
 
-    bind[DelegableAuthInfoDAO[OpenIDInfo]].to[OpenIDInfoDAO]
+//    bind[DelegableAuthInfoDAO[OpenIDInfo]].to[OpenIDInfoDAO]
 
     bind[CacheLayer].to[PlayCacheLayer]
     bind[HTTPLayer].to[PlayHTTPLayer]
@@ -139,17 +139,19 @@ class SilhouetteModule extends AbstractModule with ScalaModule {
    * @param passwordInfoDAO The implementation of the delegable password auth info DAO.
    * @param oauth1InfoDAO The implementation of the delegable OAuth1 auth info DAO.
    * @param oauth2InfoDAO The implementation of the delegable OAuth2 auth info DAO.
-   * @param openIDInfoDAO The implementation of the delegable OpenID auth info DAO.
+//   * @param openIDInfoDAO The implementation of the delegable OpenID auth info DAO.
    * @return The auth info service instance.
    */
   @Provides
   def provideAuthInfoService(
     passwordInfoDAO: DelegableAuthInfoDAO[PasswordInfo],
     oauth1InfoDAO: DelegableAuthInfoDAO[OAuth1Info],
-    oauth2InfoDAO: DelegableAuthInfoDAO[OAuth2Info],
-    openIDInfoDAO: DelegableAuthInfoDAO[OpenIDInfo]): AuthInfoService = {
+    oauth2InfoDAO: DelegableAuthInfoDAO[OAuth2Info]): AuthInfoService = {
+//    oauth2InfoDAO: DelegableAuthInfoDAO[OAuth2Info],
+//    openIDInfoDAO: DelegableAuthInfoDAO[OpenIDInfo]): AuthInfoService = {
 
-    new DelegableAuthInfoService(passwordInfoDAO, oauth1InfoDAO, oauth2InfoDAO, openIDInfoDAO)
+    new DelegableAuthInfoService(passwordInfoDAO, oauth1InfoDAO, oauth2InfoDAO)
+//    new DelegableAuthInfoService(passwordInfoDAO, oauth1InfoDAO, oauth2InfoDAO, openIDInfoDAO)
   }
 
   /**
