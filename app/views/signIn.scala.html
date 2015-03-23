@@ -27,6 +27,9 @@
         <div>
             <p class="not-a-member">Not a member? <a href="@routes.ApplicationController.signUp">Sign up now</a></p>
         </div>
+        <div>
+            <p class="not-a-member">Forgotten password? <a href="@routes.ApplicationController.forgotPassword()">Reset Password</a></p>
+        </div>
 
         @defining(env.providers.values.filter(_.isInstanceOf[SocialProvider])) { providers =>
             @if(!providers.isEmpty) {

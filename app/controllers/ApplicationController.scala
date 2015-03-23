@@ -5,10 +5,10 @@ import javax.inject.Inject
 import com.mohiva.play.silhouette.api.{ Environment, LogoutEvent, Silhouette }
 import com.mohiva.play.silhouette.impl.authenticators.SessionAuthenticator
 import forms._
-import models.{TokenUser, User}
+import models.User
 import play.api.data.Form
 import play.api.data.Forms._
-import utils.Constraints._
+
 
 
 import scala.concurrent.Future
@@ -75,16 +75,7 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
     })
   }
 
-  def handleForgotPassword = UserAwareAction.async {
-    emailForm.bindFromRequest().fold(
-      hasErrors => Future.successful(BadRequest(views.html.forgotPassword(hasErrors))),
-      email => {
-        val token = TokenUser(email, isSignUp = false)
-
-      }
-    )
-
-  }
+  def handleForgotPassword = TODO
 
   def resetPassword(tokenId: String) = TODO
 
