@@ -2,14 +2,24 @@ package controllers
 
 import javax.inject.Inject
 
+
 import com.mohiva.play.silhouette.api.{ Environment, LogoutEvent, Silhouette }
 import com.mohiva.play.silhouette.impl.authenticators.SessionAuthenticator
+import com.mohiva.play.silhouette.impl.services.DelegableAuthInfoService
+import com.mohiva.play.silhouette.impl.util.BCryptPasswordHasher
+import com.mohiva.play.silhouette.api.exceptions.AuthenticatorException
 import forms._
+import models.daos.slick.{UserDAOSlickFinder, UserDAOSlick}
 import models.{TokenUser, User}
 import play.api.data.Form
 import play.api.data.Forms._
+import play.api.i18n.Messages
+import play.api.mvc.RequestHeader
 import utils.di.Mailer
 import models.TokenUserService
+import play.mvc._
+import models.daos.slick._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 
 import scala.concurrent.Future
@@ -89,7 +99,57 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
     )
   }
 
-  def resetPassword(tokenId: String) = TODO
+  val passwordForm = Form(tuple(
+    "password1" -> nonEmptyText(minLength = 6),
+    "password2" -> nonEmptyText
+  ) verifying(Messages("Passwords not equal"), passwords => passwords._1 == passwords._2))
+
+  def resetPassword(tokenId: String) = UserAwareAction.async { implicit request =>
+    lazy val tokenService = new TokenUserService
+    tokenService.retrieve(tokenId).flatMap {
+      case Some(token) if (!token.isSignUp && !token.isExpired) => {
+        Future.successful(Ok(views.html.resetPassword(tokenId,passwordForm)))
+      }
+      case Some(token) => {
+        tokenService.consume(tokenId)
+        notFoundDefault
+      }
+      case None => notFoundDefault
+    }
+  }
 
   def handleResetPassword(tokenId: String) = TODO
+
+//  def handleResetPassword(tokenId: String) = UserAwareAction.async { implicit request =>
+//    passwordForm.bindFromRequest.fold(
+//      hasErrors => Future.successful(BadRequest(views.html.resetPassword(tokenId, hasErrors))),
+//      passwords => {
+//        lazy val tokenService = new TokenUserService
+//        tokenService.retrieve(tokenId).flatMap {
+//          case Some(token) if (!token.isSignUp && !token.isExpired) => {
+//            UserDAOSlickFinder.findMyEmail(token.email).flatMap {
+//              case Some(user) => {
+//                lazy val passwordHasher = new BCryptPasswordHasher
+//                lazy val authInfoService = new DelegableAuthInfoService(passwordInfoDAOSlickObject)
+//                val authInfo = passwordHasher.hash(passwords._1)
+//                authInfoService.save(loginInfo = , authInfo)
+//
+//
+//              }
+//              case None => Future.failed(new AuthenticatorException("Could not find the user"))
+//            }
+//          }
+//          case Some(token) => {
+//            tokenService.consume(tokenId)
+//            notFoundDefault
+//          }
+//          case None => notFoundDefault
+//        }
+//      }
+//    )
+//  }
+
+  def notFoundDefault(implicit request: RequestHeader) = Future.successful(NotFound(views.html.onHandlerNotFound(request)))
 }
+
+
