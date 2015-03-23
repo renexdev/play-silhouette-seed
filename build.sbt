@@ -21,6 +21,7 @@ libraryDependencies ++= Seq(
   "com.mohiva" %% "play-silhouette-testkit" % "2.0-RC2" % "test",
   "com.typesafe.slick" %% "slick" % "2.1.0",
   "org.postgresql" % "postgresql" % "9.3-1100-jdbc41",
+  "com.typesafe.play" %% "play-mailer" % "2.4.0",
   cache,
   jdbc,
   anorm,
