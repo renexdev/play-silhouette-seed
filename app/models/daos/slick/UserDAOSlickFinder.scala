@@ -15,7 +15,6 @@ import play.api.Play.current
 import scala.concurrent.Future
 
 
-
 object UserDAOSlickFinder extends UserDAOSlick {
 
   private val db = Database.forDataSource(DB.getDataSource())
@@ -48,15 +47,22 @@ object UserDAOSlickFinder extends UserDAOSlick {
 //    }
 //  }
 
-//  def findMyEmail(email: String):Future[Option[User]] = {
-//    db.withSession { implicit session =>
-//      Future.successful {
-//        slickLoginInfos.filter(_.providerKey === email).firstOption.get
-//      }
-//    }
-//  }
+  def findMyEmail(email: String) =
+    db.withSession { implicit session =>
+      Future.successful {
+        slickLoginInfos.filter(_.providerKey === email).firstOption
+      }
+    }
 
-  def findMyEmail(email: String) = email
+  def updateMyPassword(email: String, password: String) = db.withSession {
+    implicit request =>
+      Future.successful {
+        slickLoginInfos.filter(_.providerKey === email)
+      }
+  }
+
+
+ // def findMyEmail(email: String) = email
 }
 
 object passwordInfoDAOSlickObject extends PasswordInfoDAOSlick

@@ -1,15 +1,20 @@
 package controllers
 
+import java.util.UUID
 import javax.inject.Inject
 
 
-import com.mohiva.play.silhouette.api.{ Environment, LogoutEvent, Silhouette }
+import com.mohiva.play.silhouette.api._
+import com.mohiva.play.silhouette.api.services.AuthInfoService
+import com.mohiva.play.silhouette.api.util.PasswordHasher
 import com.mohiva.play.silhouette.impl.authenticators.SessionAuthenticator
+import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import com.mohiva.play.silhouette.impl.services.DelegableAuthInfoService
 import com.mohiva.play.silhouette.impl.util.BCryptPasswordHasher
 import com.mohiva.play.silhouette.api.exceptions.AuthenticatorException
 import forms._
 import models.daos.slick.{UserDAOSlickFinder, UserDAOSlick}
+import models.services.UserService
 import models.{TokenUser, User}
 import play.api.data.Form
 import play.api.data.Forms._
@@ -22,6 +27,7 @@ import models.daos.slick._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
+
 import scala.concurrent.Future
 
 /**
@@ -29,7 +35,10 @@ import scala.concurrent.Future
  *
  * @param env The Silhouette environment.
  */
-class ApplicationController @Inject() (implicit val env: Environment[User, SessionAuthenticator])
+class ApplicationController @Inject() (implicit val env: Environment[User, SessionAuthenticator],
+                                       val userService: UserService,
+                                       val authInfoService: AuthInfoService,
+                                       val passwordHasher: PasswordHasher)
   extends Silhouette[User, SessionAuthenticator] {
 
   /**
@@ -118,36 +127,42 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
     }
   }
 
-  def handleResetPassword(tokenId: String) = TODO
+//  def handleResetPassword(tokenId: String) = TODO
 
-//  def handleResetPassword(tokenId: String) = UserAwareAction.async { implicit request =>
-//    passwordForm.bindFromRequest.fold(
-//      hasErrors => Future.successful(BadRequest(views.html.resetPassword(tokenId, hasErrors))),
-//      passwords => {
-//        lazy val tokenService = new TokenUserService
-//        tokenService.retrieve(tokenId).flatMap {
-//          case Some(token) if (!token.isSignUp && !token.isExpired) => {
-//            UserDAOSlickFinder.findMyEmail(token.email).flatMap {
-//              case Some(user) => {
-//                lazy val passwordHasher = new BCryptPasswordHasher
-//                lazy val authInfoService = new DelegableAuthInfoService(passwordInfoDAOSlickObject)
-//                val authInfo = passwordHasher.hash(passwords._1)
-//                authInfoService.save(loginInfo = , authInfo)
-//
-//
-//              }
-//              case None => Future.failed(new AuthenticatorException("Could not find the user"))
-//            }
-//          }
-//          case Some(token) => {
-//            tokenService.consume(tokenId)
-//            notFoundDefault
-//          }
-//          case None => notFoundDefault
-//        }
-//      }
-//    )
-//  }
+  def handleResetPassword(tokenId: String) = UserAwareAction.async { implicit request =>
+    passwordForm.bindFromRequest.fold(
+      hasErrors => Future.successful(BadRequest(views.html.resetPassword(tokenId, hasErrors))),
+      passwords => {
+        lazy val tokenService = new TokenUserService
+        tokenService.retrieve(tokenId).flatMap {
+          case Some(token) if (!token.isSignUp && !token.isExpired) => {
+            UserDAOSlickFinder.findMyEmail(token.email).flatMap {
+              case Some(loginInfo) => {
+
+                val loginInfo = LoginInfo(CredentialsProvider.ID, token.email)
+                val authInfo = passwordHasher.hash(passwords._1)
+                authInfoService.save(loginInfo, authInfo)
+
+                env.authenticatorService.create(loginInfo).flatMap { authenticator =>
+//                  env.eventBus.publish(LoginEvent(loginInfo, request, request2lang))
+                  tokenService.consume(tokenId)
+                  env.authenticatorService.init(authenticator).flatMap(v => env.authenticatorService.embed(v, Future.successful(Ok(views.html.resetedPassword(loginInfo)))))
+                }
+              }
+              case None => Future.failed(new AuthenticatorException("Could not find the user"))
+            }
+          }
+          case Some(token) => {
+            tokenService.consume(tokenId)
+            notFoundDefault
+          }
+          case None => notFoundDefault
+        }
+      }
+    )
+  }
+
+
 
   def notFoundDefault(implicit request: RequestHeader) = Future.successful(NotFound(views.html.onHandlerNotFound(request)))
 }
