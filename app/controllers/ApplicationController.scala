@@ -143,6 +143,7 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
                 val authInfo = passwordHasher.hash(passwords._1)
                 authInfoService.save(loginInfo, authInfo)
 
+                // Handling works, but the password doesnt change
                 env.authenticatorService.create(loginInfo).flatMap { authenticator =>
 //                  env.eventBus.publish(LoginEvent(loginInfo, request, request2lang))
                   tokenService.consume(tokenId)
