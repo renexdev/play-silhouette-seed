@@ -21,6 +21,7 @@ import scala.concurrent.Future
 class PasswordInfoDAOSlick extends DelegableAuthInfoDAO[PasswordInfo] {
 
   private val db = Database.forDataSource(DB.getDataSource())
+
   /**
    * Saves the password info.
    *
@@ -34,7 +35,7 @@ class PasswordInfoDAOSlick extends DelegableAuthInfoDAO[PasswordInfo] {
     Future.successful(authInfo)
     */
     Future.successful {
-      db.withSession {implicit session =>
+      db.withSession { implicit session =>
         val infoId = slickLoginInfos.filter(
           x => x.providerID === loginInfo.providerID && x.providerKey === loginInfo.providerKey
         ).first.id.get
@@ -62,4 +63,22 @@ class PasswordInfoDAOSlick extends DelegableAuthInfoDAO[PasswordInfo] {
       }
     }
   }
+
+  def update(loginInfo: LoginInfo, authInfo: PasswordInfo): Future[PasswordInfo] = {
+    /*
+    data += (loginInfo -> authInfo)
+    Future.successful(authInfo)
+    */
+    Future.successful {
+      db.withSession { implicit session =>
+        val infoId = slickLoginInfos.filter(
+          x => x.providerID === loginInfo.providerID && x.providerKey === loginInfo.providerKey
+        ).first.id.get
+        slickPasswordInfos update DBPasswordInfo(authInfo.hasher, authInfo.password, authInfo.salt, infoId)
+        authInfo
+      }
+    }
+  }
 }
+
+object passwordInfoDAOSlickObject extends PasswordInfoDAOSlick

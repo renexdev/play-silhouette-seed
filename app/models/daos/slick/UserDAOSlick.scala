@@ -20,6 +20,7 @@ import scala.concurrent.Future
 class UserDAOSlick extends UserDAO {
 
   private val db = Database.forDataSource(DB.getDataSource())
+
   /**
    * Finds a user by its login info.
    *
@@ -100,7 +101,7 @@ class UserDAOSlick extends UserDAO {
         // Now make sure they are connected
         slickUserLoginInfos.filter(info => info.userID === dbUser.userID && info.loginInfoId === dbLoginInfo.id).firstOption match {
           case Some(info) =>
-            // They are connected already, we could as well omit this case ;)
+          // They are connected already, we could as well omit this case ;)
           case None =>
             slickUserLoginInfos += DBUserLoginInfo(dbUser.userID, dbLoginInfo.id.get)
         }
@@ -109,3 +110,18 @@ class UserDAOSlick extends UserDAO {
     }
   }
 }
+
+object UserDAOSlickFinder extends UserDAOSlick {
+
+  private val db = Database.forDataSource(DB.getDataSource())
+
+  def findEmailForPassReset(email: String) =
+    db.withSession { implicit session =>
+      Future.successful {
+        slickLoginInfos.filter(_.providerKey === email).firstOption
+      }
+    }
+}
+
+
+

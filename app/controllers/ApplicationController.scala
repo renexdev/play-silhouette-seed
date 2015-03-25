@@ -127,8 +127,6 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
     }
   }
 
-//  def handleResetPassword(tokenId: String) = TODO
-
   def handleResetPassword(tokenId: String) = UserAwareAction.async { implicit request =>
     passwordForm.bindFromRequest.fold(
       hasErrors => Future.successful(BadRequest(views.html.resetPassword(tokenId, hasErrors))),
@@ -136,16 +134,21 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
         lazy val tokenService = new TokenUserService
         tokenService.retrieve(tokenId).flatMap {
           case Some(token) if (!token.isSignUp && !token.isExpired) => {
-            UserDAOSlickFinder.findMyEmail(token.email).flatMap {
+            UserDAOSlickFinder.findEmailForPassReset(token.email).flatMap {
               case Some(loginInfo) => {
 
                 val loginInfo = LoginInfo(CredentialsProvider.ID, token.email)
                 val authInfo = passwordHasher.hash(passwords._1)
-                authInfoService.save(loginInfo, authInfo)
 
-                // Handling works, but the password doesnt change
+//                This part remain unknown for me
+//                authInfoService.save(loginInfo, authInfo)
+
+                passwordInfoDAOSlickObject.update(loginInfo, authInfo)
+                println(loginInfo)
+
+                // Uncertanity about what is eventBus
                 env.authenticatorService.create(loginInfo).flatMap { authenticator =>
-//                  env.eventBus.publish(LoginEvent(loginInfo, request, request2lang))
+                  //                  env.eventBus.publish(LoginEvent(loginInfo, request, request2lang))
                   tokenService.consume(tokenId)
                   env.authenticatorService.init(authenticator).flatMap(v => env.authenticatorService.embed(v, Future.successful(Ok(views.html.resetedPassword(loginInfo)))))
                 }
@@ -162,8 +165,6 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
       }
     )
   }
-
-
 
   def notFoundDefault(implicit request: RequestHeader) = Future.successful(NotFound(views.html.onHandlerNotFound(request)))
 }
