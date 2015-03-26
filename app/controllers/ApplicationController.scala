@@ -91,19 +91,19 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
   def forgotPassword = UserAwareAction.async { implicit request =>
     Future.successful( request.identity match {
       case Some(user) => Redirect(routes.ApplicationController.index())
-      case None => Ok(views.html.forgotPassword(emailForm))
+      case None => Ok(views.html.auth.forgotPassword(emailForm))
     })
   }
 
   def handleForgotPassword = UserAwareAction.async { implicit request =>
     emailForm.bindFromRequest.fold(
-      hasErrors => Future.successful(BadRequest(views.html.forgotPassword(hasErrors))),
+      hasErrors => Future.successful(BadRequest(views.html.auth.forgotPassword(hasErrors))),
       email => {
         val token = TokenUser(email, isSignUp = false)
         lazy val tokenService = new TokenUserService
         tokenService.create(token)
         Mailer.forgotPassword(email, link = routes.ApplicationController.resetPassword(token.id).absoluteURL())
-        Future.successful(Ok(views.html.forgotPasswordSent(email)))
+        Future.successful(Ok(views.html.auth.forgotPasswordSent(email)))
       }
     )
   }
@@ -117,7 +117,7 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
     lazy val tokenService = new TokenUserService
     tokenService.retrieve(tokenId).flatMap {
       case Some(token) if (!token.isSignUp && !token.isExpired) => {
-        Future.successful(Ok(views.html.resetPassword(tokenId,passwordForm)))
+        Future.successful(Ok(views.html.auth.resetPassword(tokenId,passwordForm)))
       }
       case Some(token) => {
         tokenService.consume(tokenId)
@@ -129,7 +129,7 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
 
   def handleResetPassword(tokenId: String) = UserAwareAction.async { implicit request =>
     passwordForm.bindFromRequest.fold(
-      hasErrors => Future.successful(BadRequest(views.html.resetPassword(tokenId, hasErrors))),
+      hasErrors => Future.successful(BadRequest(views.html.auth.resetPassword(tokenId, hasErrors))),
       passwords => {
         lazy val tokenService = new TokenUserService
         tokenService.retrieve(tokenId).flatMap {
@@ -150,7 +150,7 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
                 env.authenticatorService.create(loginInfo).flatMap { authenticator =>
                   //                  env.eventBus.publish(LoginEvent(loginInfo, request, request2lang))
                   tokenService.consume(tokenId)
-                  env.authenticatorService.init(authenticator).flatMap(v => env.authenticatorService.embed(v, Future.successful(Ok(views.html.resetedPassword(loginInfo)))))
+                  env.authenticatorService.init(authenticator).flatMap(v => env.authenticatorService.embed(v, Future.successful(Ok(views.html.auth.resetedPassword(loginInfo)))))
                 }
               }
               case None => Future.failed(new AuthenticatorException("Could not find the user"))
@@ -166,7 +166,7 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
     )
   }
 
-  def notFoundDefault(implicit request: RequestHeader) = Future.successful(NotFound(views.html.onHandlerNotFound(request)))
+  def notFoundDefault(implicit request: RequestHeader) = Future.successful(NotFound(views.html.auth.onHandlerNotFound(request)))
 }
 
 
