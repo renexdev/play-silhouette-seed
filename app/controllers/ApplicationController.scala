@@ -1,24 +1,17 @@
 package controllers
 
-import java.util.UUID
+
 import javax.inject.Inject
-
-
 import com.mohiva.play.silhouette.api._
 import com.mohiva.play.silhouette.api.services.AuthInfoService
 import com.mohiva.play.silhouette.api.util.PasswordHasher
 import com.mohiva.play.silhouette.impl.authenticators.SessionAuthenticator
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
-import com.mohiva.play.silhouette.impl.services.DelegableAuthInfoService
-import com.mohiva.play.silhouette.impl.util.BCryptPasswordHasher
 import com.mohiva.play.silhouette.api.exceptions.AuthenticatorException
 import forms._
-import models.daos.slick.{UserDAOSlickFinder, UserDAOSlick}
+import models.daos.slick.UserDAOSlickFinder
 import models.services.UserService
 import models.{TokenUser, User}
-import play.api.data.Form
-import play.api.data.Forms._
-import play.api.i18n.Messages
 import play.api.mvc.RequestHeader
 import utils.di.Mailer
 import models.TokenUserService
@@ -86,17 +79,17 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
     request.authenticator.discard(result)
   }
   // Forgotten Password
-  val emailForm = Form(single("email" -> email))
+
 
   def forgotPassword = UserAwareAction.async { implicit request =>
     Future.successful( request.identity match {
       case Some(user) => Redirect(routes.ApplicationController.index())
-      case None => Ok(views.html.auth.forgotPassword(emailForm))
+      case None => Ok(views.html.auth.forgotPassword(ResetPasswordForms.emailForm))
     })
   }
 
   def handleForgotPassword = UserAwareAction.async { implicit request =>
-    emailForm.bindFromRequest.fold(
+    ResetPasswordForms.emailForm.bindFromRequest.fold(
       hasErrors => Future.successful(BadRequest(views.html.auth.forgotPassword(hasErrors))),
       email => {
         val token = TokenUser(email, isSignUp = false)
@@ -108,16 +101,11 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
     )
   }
 
-  val passwordForm = Form(tuple(
-    "password1" -> nonEmptyText(minLength = 6),
-    "password2" -> nonEmptyText
-  ) verifying(Messages("Passwords not equal"), passwords => passwords._1 == passwords._2))
-
   def resetPassword(tokenId: String) = UserAwareAction.async { implicit request =>
     lazy val tokenService = new TokenUserService
     tokenService.retrieve(tokenId).flatMap {
       case Some(token) if (!token.isSignUp && !token.isExpired) => {
-        Future.successful(Ok(views.html.auth.resetPassword(tokenId,passwordForm)))
+        Future.successful(Ok(views.html.auth.resetPassword(tokenId,ResetPasswordForms.passwordForm)))
       }
       case Some(token) => {
         tokenService.consume(tokenId)
@@ -128,7 +116,7 @@ class ApplicationController @Inject() (implicit val env: Environment[User, Sessi
   }
 
   def handleResetPassword(tokenId: String) = UserAwareAction.async { implicit request =>
-    passwordForm.bindFromRequest.fold(
+    ResetPasswordForms.passwordForm.bindFromRequest.fold(
       hasErrors => Future.successful(BadRequest(views.html.auth.resetPassword(tokenId, hasErrors))),
       passwords => {
         lazy val tokenService = new TokenUserService
